@@ -3,13 +3,18 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable, Iterator
 from collections.abc import Mapping as AbstractMapping
 from dataclasses import dataclass, replace
 
-from .detectors import DETECTORS
+from . import entities
+from .detectors import DETECTORS, Candidate
 
 LANGS = frozenset({"de", "fr", "it", "en"})
+
+Detector = Callable[[str], Iterator[Candidate]]
+# Kinds that never replace what looks like the name of an authority ("Steueramt St. Gallen").
+_PROTECTED = frozenset({"PERSON", "ORG", "ADDRESS"})
 
 # Tolerant on restore: models sometimes change case or add spaces inside the brackets.
 _TOKEN = re.compile(r"\[\s*([A-Za-z]+)\s*_\s*(\d+)\s*\]")
@@ -42,23 +47,47 @@ class Mapping(dict[str, str]):
 
 
 def _check_lang(lang: str | None) -> None:
-    # shortcut: lang has no effect yet (the checksum recognisers are language-neutral);
-    # it selects context words once names and addresses arrive.
+    # shortcut: lang is validated but changes nothing; all four languages are always active
+    # because Swiss texts mix them.
     if lang is not None and lang.lower().split("-")[0] not in LANGS:
         raise ValueError(f"unsupported lang {lang!r}, expected one of {sorted(LANGS)}")
 
 
-def detect(text: str, lang: str | None = None, *, keep: Iterable[str] = ()) -> list[Finding]:
+def _kept(value: str, keep: Iterable[str | re.Pattern[str]]) -> bool:
+    folded = value.casefold()
+    return any(
+        k.fullmatch(value) if isinstance(k, re.Pattern) else k.casefold() == folded for k in keep
+    )
+
+
+def detect(
+    text: str,
+    lang: str | None = None,
+    *,
+    keep: Iterable[str | re.Pattern[str]] = (),
+    detectors: Iterable[Detector] = (),
+    protect_authorities: bool = True,
+) -> list[Finding]:
     """Find personal data. Overlaps go to the higher confidence, then the longer match.
 
-    ``keep``: exact values (case-insensitive) that must stay in the text.
+    ``keep``: values that must stay in the text, as exact strings (case-insensitive) or
+    compiled patterns that must match the whole value.
+    ``detectors``: extra recognisers, for example ``isomorphism.presidio.presidio_detector``.
+    ``protect_authorities``: names of authorities such as "Steueramt St. Gallen" are not replaced.
     """
     _check_lang(lang)
-    kept = {k.casefold() for k in keep}
-    found = sorted(
-        (c for d in DETECTORS for c in d(text) if text[c.start : c.end].casefold() not in kept),
-        key=lambda c: (-c.confidence, c.start - c.end, c.start),
+    keep = tuple(keep)
+    authorities = (
+        [m.span() for m in entities.AUTHORITY.finditer(text)] if protect_authorities else []
     )
+    candidates = (
+        c
+        for d in (*DETECTORS, *entities.DETECTORS, *detectors)
+        for c in d(text)
+        if not _kept(text[c.start : c.end], keep)
+        and not (c.kind in _PROTECTED and any(s < c.end and c.start < e for s, e in authorities))
+    )
+    found = sorted(candidates, key=lambda c: (-c.confidence, c.start - c.end, c.start))
     taken: list[tuple[int, int]] = []
     out: list[Finding] = []
     for c in found:
@@ -69,7 +98,12 @@ def detect(text: str, lang: str | None = None, *, keep: Iterable[str] = ()) -> l
 
 
 def anonymize(
-    text: str, lang: str | None = None, *, keep: Iterable[str] = ()
+    text: str,
+    lang: str | None = None,
+    *,
+    keep: Iterable[str | re.Pattern[str]] = (),
+    detectors: Iterable[Detector] = (),
+    protect_authorities: bool = True,
 ) -> tuple[str, Mapping]:
     """Replace personal data by placeholders like ``[AHV_1]``.
 
@@ -83,7 +117,9 @@ def anonymize(
     counters: dict[str, int] = {}
     parts: list[str] = []
     pos = 0
-    for f in detect(text, lang, keep=keep):
+    for f in detect(
+        text, lang, keep=keep, detectors=detectors, protect_authorities=protect_authorities
+    ):
         value = text[f.start : f.end]
         ph = by_value.get((f.kind, value))
         if ph is None:
@@ -113,3 +149,42 @@ def restore(text: str, mapping: AbstractMapping[str, str]) -> str:
     Unknown placeholders stay unchanged.
     """
     return _TOKEN.sub(lambda m: mapping.get(_name(m), m[0]), text)
+
+
+# A placeholder with generous spaces stays well below this; longer tails are plain text.
+_HOLD = 40
+
+
+class Restorer:
+    """``restore`` for an answer that arrives in pieces, also when a placeholder is split.
+
+    >>> r = Restorer(mapping); out = "".join(r.feed(c) for c in chunks) + r.flush()
+    """
+
+    def __init__(self, mapping: AbstractMapping[str, str]) -> None:
+        self._mapping = mapping
+        self._tail = ""
+
+    def feed(self, chunk: str) -> str:
+        buf = self._tail + chunk
+        i = buf.rfind("[")
+        if i != -1 and "]" not in buf[i:] and len(buf) - i <= _HOLD:
+            buf, self._tail = buf[:i], buf[i:]
+        else:
+            self._tail = ""
+        return restore(buf, self._mapping)
+
+    def flush(self) -> str:
+        """The held-back end, once the answer is complete."""
+        tail, self._tail = self._tail, ""
+        return restore(tail, self._mapping)
+
+
+def restore_stream(chunks: Iterable[str], mapping: AbstractMapping[str, str]) -> Iterator[str]:
+    """Generator version of :class:`Restorer`."""
+    r = Restorer(mapping)
+    for chunk in chunks:
+        if out := r.feed(chunk):
+            yield out
+    if out := r.flush():
+        yield out

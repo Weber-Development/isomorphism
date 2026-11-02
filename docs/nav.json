@@ -1,7 +1,31 @@
 {
   "sections": [
-    { "label": "Start", "items": ["introduction", "getting-started"] },
-    { "label": "Reference", "items": ["reference/api", "reference/recognisers"] },
-    { "label": "Legal", "items": ["legal"] }
+    {
+      "label": "Start",
+      "items": [
+        "introduction",
+        "getting-started"
+      ]
+    },
+    {
+      "label": "Guides",
+      "items": [
+        "guides/fastapi",
+        "guides/presidio"
+      ]
+    },
+    {
+      "label": "Reference",
+      "items": [
+        "reference/api",
+        "reference/recognisers"
+      ]
+    },
+    {
+      "label": "Legal",
+      "items": [
+        "legal"
+      ]
+    }
   ]
 }

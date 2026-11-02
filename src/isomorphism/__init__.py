@@ -2,7 +2,16 @@
 
 from importlib.metadata import version
 
-from .core import Finding, Mapping, anonymize, detect, restore
+from .core import Finding, Mapping, Restorer, anonymize, detect, restore, restore_stream
 
 __version__ = version("isomorphism")
-__all__ = ["Finding", "Mapping", "__version__", "anonymize", "detect", "restore"]
+__all__ = [
+    "Finding",
+    "Mapping",
+    "Restorer",
+    "__version__",
+    "anonymize",
+    "detect",
+    "restore",
+    "restore_stream",
+]

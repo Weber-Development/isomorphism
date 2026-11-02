@@ -14,9 +14,9 @@ Python 3.12 or newer.
 ```python
 from isomorphism import anonymize, restore
 
-text = "AHV 756.1234.5678.97, IBAN CH93 0076 2011 6238 5295 7, UID CHE-123.456.788 MWST"
-safe, mapping = anonymize(text, lang="de")
-print(safe)  # AHV [AHV_1], IBAN [IBAN_1], UID [UID_1] MWST
+text = "Hr. Keller, AHV 756.1234.5678.97, IBAN CH93 0076 2011 6238 5295 7, UID CHE-123.456.788 MWST"
+safe, mapping = anonymize(text)
+print(safe)  # [PERSON_1], AHV [AHV_1], IBAN [IBAN_1], UID [UID_1] MWST
 
 answer = call_your_model(safe)
 print(restore(answer, mapping))
@@ -27,7 +27,7 @@ Keep the mapping for as long as the request runs, for example in a variable or y
 ## Keep some values
 
 ```python
-safe, mapping = anonymize(text, keep=["info@gemeinde.example"])
+safe, mapping = anonymize(text, keep=["info@gemeinde.example"])  # strings or compiled patterns
 ```
 
 ## Audit log
