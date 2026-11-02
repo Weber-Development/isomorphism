@@ -11,7 +11,19 @@ from isomorphism import detect
 
 from .cases import CASES
 
-KINDS = ("AHV", "IBAN", "UID", "PHONE", "EMAIL")
+KINDS = (
+    "AHV",
+    "IBAN",
+    "UID",
+    "PHONE",
+    "EMAIL",
+    "PERSON",
+    "ORG",
+    "ADDRESS",
+    "DOB",
+    "CARD",
+    "ACCOUNT",
+)
 
 
 def measure() -> dict[str, Counter[str]]:

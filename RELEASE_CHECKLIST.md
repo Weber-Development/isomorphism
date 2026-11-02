@@ -2,21 +2,15 @@
 
 | Item | Status |
 |---|---|
-| Repo `Weber-Development/isomorphism` | private; make it public before docs can render (read from GitHub) |
-| PyPI `isomorphism` 0.1.0 | waits for the PyPI account and a trusted publisher (see below) |
-| packages.sweber.dev | entry, docs config, demo, blog post: sxwxbxr/portfoliov3 PR |
-| Pro | not planned for 0.1; core is MIT |
+| Repo `Weber-Development/isomorphism` | see GitHub for visibility; docs render only when public |
+| PyPI `isomorphism` | 0.1.0 published; later versions: tag `v<version>` on `main` (trusted publishing, environment `pypi`) |
+| packages.sweber.dev | page, demo, blog post: sxwxbxr/portfoliov3 (wheel in `public/demos/isomorphism/` must match the release) |
+| Pro | none planned; core is MIT |
 | Polar | not needed (free only) |
+| Trademark check "Isomorphism" | open (Seya) |
 
-## Publishing (Seya)
+## Per release
 
-1. Create the PyPI account (2FA on) if there is none.
-2. On pypi.org: Your projects, Publishing, **Add a new pending publisher**: project `isomorphism`,
-   owner `Weber-Development`, repository `isomorphism`, workflow `release.yml`, environment `pypi`.
-3. In GitHub, repo Settings, Environments: create `pypi`.
-4. Tag `v0.1.0` on `main` (the Release workflow builds, tests and publishes). No token is stored anywhere.
-
-## Next version (0.2.0)
-
-Names, addresses, company names, dates of birth, account and card numbers, streaming `restore`,
-optional Presidio backend for names in running text.
+1. Bump `version` in `pyproject.toml`, update `CHANGELOG.md` and the README table (`python -m tests.measure`).
+2. PR, CI green, merge, then tag `v<version>`.
+3. portfoliov3: new wheel in `public/demos/isomorphism/`, `content/packages/isomorphism.json`, blog post.
