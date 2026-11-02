@@ -1,0 +1,55 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "isomorphism"
+version = "0.1.0"
+description = "Reversible anonymisation of Swiss personal data (AHV, IBAN, UID, phone, email) before text goes to a language model. Fully local, no dependencies."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Seya Weber" }]
+keywords = ["anonymization", "pseudonymization", "pii", "switzerland", "ahv", "iban", "llm", "privacy", "dsg"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Security",
+  "Typing :: Typed",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://packages.sweber.dev/isomorphism"
+Documentation = "https://packages.sweber.dev/isomorphism/docs"
+Repository = "https://github.com/Weber-Development/isomorphism"
+Changelog = "https://github.com/Weber-Development/isomorphism/blob/main/CHANGELOG.md"
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.8", "mypy>=1.13"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/isomorphism"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/cases.py" = ["E501"]  # fixture lines are long on purpose
+
+[tool.mypy]
+strict = true
+files = ["src", "tests"]

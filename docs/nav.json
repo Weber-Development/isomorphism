@@ -1,0 +1,7 @@
+{
+  "sections": [
+    { "label": "Start", "items": ["introduction", "getting-started"] },
+    { "label": "Reference", "items": ["reference/api", "reference/recognisers"] },
+    { "label": "Legal", "items": ["legal"] }
+  ]
+}
