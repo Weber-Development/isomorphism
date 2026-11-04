@@ -16,8 +16,10 @@ from .detectors import Candidate
 _UP = "A-ZÄÖÜÉÈÀÂÊÎÔÛÇÑÁÍÓÚÝĆČŠŽĐŁŃŚŹŻŐŰĂŞŢĞİËÏŸŒÆÅØÃÕ"
 _LO = "a-zäöüéèàâêîôûçñßøáíóúýćčšžđłńśźżőűăşţğıëïÿœæåãõ"
 # One capitalised word, also hyphenated or with an apostrophe (Müller-Keller, D'Angelo, P'tits).
-_WORD = rf"[{_UP}](?:[{_LO}]+|['’][{_UP}]?[{_LO}]+)(?:[-'’][{_UP}]?[{_LO}]+)*"
-_PARTICLE = r"(?i:von der|van der|von|van|de la|de|di|da|del|della|dos|das|do|zu|le|la|ten|ter)"
+# Never starts inside a hyphen or apostrophe chain, so "Aa-Aa-Aa-…" is scanned once, not once
+# per hyphen.
+_WORD = rf"(?<![\w'’-])[{_UP}](?:[{_LO}]+|['’][{_UP}]?[{_LO}]+)(?:[-'’][{_UP}]?[{_LO}]+)*"
+_PARTICLE = r"(?i:von der|van der|von|van|de la|de|di|da|del|della|dos|zu|le|la|ten|ter)"
 _SURNAME = rf"(?:{_PARTICLE}[ ])?{_WORD}"
 # An initial: "B.", "Th.", "J.-P."; not "St." (St. Gallen) or "Nr.".
 _INITIAL = rf"(?<!z\. )(?<!z\.)(?<!u\. )(?<!d\. )(?!St\.|Nr\.|Ch\.)[{_UP}][{_LO}]?\.(?:-[{_UP}]\.)?"
@@ -112,14 +114,14 @@ def normalise(text: str) -> str:
     return "".join(out)
 
 
-def caps_lines(text: str) -> list[tuple[int, int]]:
-    """Start and end of the lines that normalise() reads as capitals."""
-    spans, pos = [], 0
+def caps_lines(text: str) -> bytearray:
+    """1 for every character in a line that normalise() reads as capitals."""
+    mask, pos = bytearray(len(text)), 0
     for line in text.split("\n"):
         if _is_caps([m for m in _LETTERS.finditer(line) if len(m[0]) >= 2]):
-            spans.append((pos, pos + len(line)))
+            mask[pos : pos + len(line)] = b"\x01" * len(line)
         pos += len(line) + 1
-    return spans
+    return mask
 
 
 # --- persons -------------------------------------------------------------------------------
@@ -202,6 +204,11 @@ def persons(text: str) -> Iterator[Candidate]:
     text = normalise(text)
     found: list[tuple[int, int]] = []
     reusable: list[tuple[int, int]] = []
+    covered = bytearray(len(text))  # 1 where a person was found, for O(1) lookups
+    # Words of an authority ("Gemeinde Wil") are reported (core drops them) but never reused.
+    official = bytearray(len(text))
+    for a in AUTHORITY.finditer(text):
+        official[a.start() : a.end()] = b"\x01" * (a.end() - a.start())
 
     def hit(start: int, end: int, confidence: float, detector: str) -> Candidate | None:
         # Cut at the first word that is not a name ("Frau Meier Die ...", "Dr. Tax Update").
@@ -216,7 +223,8 @@ def persons(text: str) -> Iterator[Candidate]:
             return None
         end = start + len(value)
         found.append((start, end))
-        if confidence >= 0.65:
+        covered[start:end] = b"\x01" * (end - start)
+        if confidence >= 0.65 and not any(official[start:end]):
             reusable.append((start, end))
         return Candidate("PERSON", start, end, confidence, detector)
 
@@ -267,17 +275,18 @@ def persons(text: str) -> Iterator[Candidate]:
         words = "|".join(map(re.escape, sorted(names, key=len, reverse=True)))
         pattern = re.compile(rf"(?<![\w-])(?:{_PARTICLE}[ ])?(?:{words})(?![\w-])")
         for m in pattern.finditer(text):
-            if not any(s <= m.start() < e for s, e in found):
+            if not covered[m.start()] and not any(official[m.start() : m.end()]):
                 yield Candidate("PERSON", m.start(), m.end(), 0.6, "person-surname-ref")
     for m in _BARE_FIRST.finditer(text):
-        if not any(s <= m.start() < e for s, e in found):
+        if not covered[m.start()]:
             yield Candidate("PERSON", m.start(), m.end(), 0.45, "person-firstname")
 
 
 # --- companies -----------------------------------------------------------------------------
 
 _LEGAL = (
-    r"(?:AG|GmbH|GMBH|SA|SARL|Sàrl|S\.à r\.l\.|Sagl|SAGL|KlG|KIG|SNC|KG|OHG|Ltd\.?|Inc\.?|LLC|"
+    r"(?:AG|GmbH|GMBH|SA|SARL|Sàrl|S\.à r\.l\.|Sagl|SAGL|KlG|KIG|KLG|SNC|KG|OHG|Ltd\.?|LTD|"
+    r"Inc\.?|INC|LLC|"
     r"Genossenschaft|Stiftung|& Cie\.?(?: (?:AG|SA))?)"
 )
 _ORG_WORD = rf"(?:{_WORD}-?|[A-ZÄÖÜ]{{2,}}|&|Co\.|und|et|e|and|du|de|des|della|di|del|dei|von)"
@@ -392,13 +401,13 @@ _PLZ_NUM = re.compile(r"(?<![\d.])[1-9]\d{3}(?!\d)")
 def addresses(text: str) -> Iterator[Candidate]:
     capitals = caps_lines(text)
     text = normalise(text)
-    taken: list[tuple[int, int]] = []
+    taken = bytearray(len(text))
     for m in _ADDRESS.finditer(text):
-        taken.append(m.span())
+        taken[m.start() : m.end()] = b"\x01" * (m.end() - m.start())
         full = bool(_PLZ_ONLY.search(m[0]))
         yield Candidate("ADDRESS", m.start(), m.end(), 0.95 if full else 0.8, "address-street")
     for m in _PLZ_ONLY.finditer(text):
-        if any(s <= m.start() < e for s, e in taken):
+        if taken[m.start()]:
             continue
         num = int(_PLZ_NUM.search(m[0])[0])  # type: ignore[index]
         # Years look like postcodes: without "CH-" or "PLZ" before it, 1900-2099 is not trusted.
@@ -408,7 +417,7 @@ def addresses(text: str) -> Iterator[Candidate]:
         # a comma or after a preposition. "3000 Franken" and "1200 Meter" are not places.
         # In a booking line in capitals the postcode follows the name:
         # "KELLER HANS 8405 WINTERTHUR".
-        in_caps = any(s <= m.start() < e for s, e in capitals)
+        in_caps = bool(capitals[m.start()])
         if not marked and not in_caps and not _ADDRESS_LEAD.search(before):
             continue
         if 1900 <= num <= 2099 and not marked:

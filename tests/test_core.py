@@ -243,3 +243,16 @@ def test_names_without_list_after_context_words() -> None:
 def test_gemeinde_and_kanton_are_authorities() -> None:
     anon, _ = anonymize("Gutschrift Gemeinde Wil, Steuern Kanton St. Gallen, Gutschrift Lea Bieri")
     assert anon == "Gutschrift Gemeinde Wil, Steuern Kanton St. Gallen, Gutschrift [PERSON_1]"
+
+
+def test_authority_words_are_not_reused_as_names() -> None:
+    for text in (
+        "Gutschrift Gemeinde Wil. Die Gemeinde hat bezahlt.",
+        "Zahlung an Steueramt Zürich. Unser Büro ist in Zürich.",
+    ):
+        assert anonymize(text)[0] == text
+
+
+def test_legal_forms_in_capitals() -> None:
+    anon, _ = anonymize("MUSTER KLG, MUSTER LTD, MUSTER INC, MUSTER LLC")
+    assert anon == "[ORG_1], [ORG_2], [ORG_3], [ORG_4]"

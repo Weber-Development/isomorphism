@@ -77,7 +77,7 @@ Read it as follows:
 
 - "Missed" is zero for every kind: no value in these texts gets through.
 - The two address false alarms are `4500 Euro` and `1200 Meter` after a comma: a four-digit number followed by a capitalised word looks like a postcode and a place. They are reported with low confidence (0.55), so you can filter by confidence.
-- Names, companies and addresses are heuristics (titles, a list of about 440 first names, legal forms, street words). They find less than a language model would and can over-report. A person written two ways (`Anna Muster`, then `Muster`) gets two placeholders.
+- Names, companies and addresses are heuristics (titles, initials, context words, a list of common first names of many origins, legal forms, trade and street words). They find less than a language model would and can over-report. A person written two ways (`Anna Muster`, then `Muster`) gets two placeholders.
 - This is a small invented set, not a benchmark on real documents. Test with your own (invented) samples before you rely on it.
 
 ## Acceptance
@@ -92,7 +92,7 @@ Names, companies and addresses are heuristics, so they get their own acceptance,
 
 Set A was used for the first round of changes. Set B, written blind, showed what that round did not generalise, and the second round fixed the structural classes from B. Set C was then written blind by a fresh reviewer and decided the acceptance.
 
-**Result: 0.3.0 does not pass the whole acceptance.** On set C as counted, tier 1 held for persons and companies (100 %) and reached 86 % for addresses; tier 2 reached 45 % of names, 54 % of companies and 53 % of addresses. Afterwards only the three tier-1 address layouts from C (`/` or tab before the postcode, a house number range `140-142`) and two structural classes (double first names with one known half, `V.le`) were fixed, so C is no longer blind. Tier 1 is now complete on all three sets. Tier 2 stays below the minimum on C: names without a title or context word are found only when the first name is on the list. Until a recogniser with a language model is added, use 0.3.0 as one layer, not as the only protection for real documents.
+**Result: 0.3.0 does not pass the whole acceptance.** On set C as counted, tier 1 held for persons and companies (100 %) and reached 86 % for addresses; tier 2 reached 45 % of names, 54 % of companies and 53 % of addresses. Afterwards only the three tier-1 address layouts from C (`/` or tab before the postcode, a house number range `140-142`) and two structural classes (double first names with one known half, `V.le`) were fixed, so C is no longer blind. Tier 1 is now complete on all three sets. Tier 2 stays below the minimum on C for all three kinds (names 51 %, companies 54 %, addresses 63 %): names without a title or context word are found only when the first name is on the list, companies without legal form only after a known trade word. Until a recogniser with a language model is added, use 0.3.0 as one layer, not as the only protection for real documents.
 
 All three sets stay as regression tests. `python -m tests.acceptance -v` prints the table below and every miss.
 

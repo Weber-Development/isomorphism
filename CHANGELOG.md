@@ -2,7 +2,7 @@
 
 ## 0.3.0
 
-Persons, companies and addresses are measured against an acceptance on three blind, invented Swiss test sets (README "Acceptance"). 0.3.0 finds every name with a title, every company with a legal form and every full address in all three sets, where 0.2.0 found 27 to 50 % of those names. It does not reach the minimum for names without title or context on the last blind set (51 %, 0.2.0: 4 %).
+Persons, companies and addresses are measured against an acceptance on three blind, invented Swiss test sets (README "Acceptance"). 0.3.0 finds every name with a title, every company with a legal form and every full address in all three sets, where 0.2.0 found 27 to 50 % of those names. It does not reach the tier-2 minimum on the last blind set for any of the three kinds: names 51 % (0.2.0: 4 %), companies 54 % (0 %), addresses 63 % (47 %).
 
 - Persons: names after a title with any first name (`Frau Dr. Patrizia Caflisch`), more titles (`Me`, `Fam.`, `Familie`, `Notar`, `avv.`, `Dr. med. dent.`), initials (`B. Bürgi`, `J.-P. Chappuis`), particles (`Dos Santos`, `van der Meer`), names after context words (`Mieter:`, `Gutschrift`, `Zahlbar durch`, `my wife`, `Lieber`, `CC:`) and under a closing formula, `X und Y`, surname first (`Krasniqi Arben,`). Double first names with one known half (`Rose-Marie`). Every name word of a found person is found again later. More first names of many origins and Swiss short forms (`Dani`, `Vreni`).
 - Companies: legal form in front (`Verein …`, `…genossenschaft …`), trade and name (`Bäckerei Lüthi`, `Notariat Zumstein & Partner`, `Gashi Gipserei`), particles and `& Co.` inside names.
@@ -10,7 +10,8 @@ Persons, companies and addresses are measured against an acceptance on three bli
 - Text in capitals (bank bookings, payment slips) and chats without capitals are read as if written normally.
 - Authorities: `Gemeinde X`, `Kanton X`, `Commune de X` and similar are not replaced.
 - `tests/acceptance.py` with three blind sets and the agreed thresholds; the README shows the result.
-- More is replaced than in 0.2.0. A text with many names takes up to about 1.5 s per 200,000 characters.
+- More is replaced than in 0.2.0. Overlap checks no longer grow with the square of the hits, and a word never starts inside a hyphen chain: 200,000 characters take up to about 2 s, also for adversarial input.
+- Words of an authority are never reused as a name elsewhere in the text.
 
 ## 0.2.0
 
