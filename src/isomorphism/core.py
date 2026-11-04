@@ -78,7 +78,9 @@ def detect(
     _check_lang(lang)
     keep = tuple(keep)
     authorities = (
-        [m.span() for m in entities.AUTHORITY.finditer(text)] if protect_authorities else []
+        [m.span() for m in entities.AUTHORITY.finditer(entities.normalise(text))]
+        if protect_authorities
+        else []
     )
     candidates = (
         c

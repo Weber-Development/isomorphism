@@ -37,17 +37,19 @@ The mapping holds the real values. This package never logs or stores it; keeping
 | UID number | `[UID_n]` | `CHE-123.456.788`, `CHE123456788`; `MWST`/`TVA`/`IVA`/`HR` stay in the text | mod 11 |
 | Phone (Switzerland) | `[PHONE_n]` | `+41 71 123 45 67`, `0041 …`, `+41 (0)71 …`, `071 123 45 67`, `071/123 45 67`, `(071) …`, `0711234567` | format |
 | Email | `[EMAIL_n]` | | format |
-| Person | `[PERSON_n]` | `Hr. Keller`, `Frau Dr. Müller`, `M. Jean Dupont`, `signora Bianchi`, `Anna Muster`, `Muster, Anna`; the same surname or a first name alone later in the text | titles, first-name list |
-| Company | `[ORG_n]` | name before AG, GmbH, SA, Sàrl, Sagl, KlG, KG, Ltd, Inc, LLC … | legal form |
-| Address | `[ADDRESS_n]` | `Musterstrasse 12, 9000 St. Gallen`, `Rue de Lausanne 12, 1003 Lausanne`, `Via Nassa 8, 6900 Lugano`, `12 Baker Street`, `CH-9000 St. Gallen` | street words, postcode |
+| Person | `[PERSON_n]` | `Hr. Keller`, `Frau Dr. Patrizia Caflisch`, `Mme Aurélie Dos Santos`, `Fam. Gashi`, `B. Bürgi`, `Anna Muster`, `Muster, Anna`; names after `Mieter:`, `Gutschrift`, `CC:`, `Lieber`, under `Freundliche Grüsse`; every name word again later in the text | titles, initials, context words, first-name list |
+| Company | `[ORG_n]` | name before AG, GmbH, SA, Sàrl, Sagl, KlG, KG, Ltd, Inc, LLC …; `Verein …`, `Wohnbaugenossenschaft …`; a trade and a name (`Bäckerei Lüthi`, `Notariat Zumstein & Partner`) | legal form, trade words |
+| Address | `[ADDRESS_n]` | `Musterstrasse 12, 9000 St. Gallen`, `Bahnhofstr. 3, 9500 Wil SG`, `Im Grund 11, 8952 Schlieren`, `Rue de Lausanne 12, 1003 Lausanne`, `Via S. Gottardo 14`, `Postfach 248, 9001 St. Gallen`, `12 Baker Street`, `CH-9000 St. Gallen` | street words, postcode |
 | Date of birth | `[DOB_n]` | a date after `geb.`, `Geburtsdatum`, `né le`, `nata il`, `date of birth` … | context word |
 | Card number | `[CARD_n]` | 16 digits (`4111 1111 1111 1111`), Amex | Luhn |
 | Account | `[ACCOUNT_n]` | PostFinance `80-12345-6`; digits after `Konto`, `compte`, `conto`, `account` | mod 10 / context word |
 
+Lines in capitals (`HANS-PETER AEBERSOLD`, bank bookings, payment slips) and chat messages without capitals (`hoi sandra, frau meier-huber fragt …`) are read as if written normally, at the same positions.
+
 `detect(text)` returns the hits without changing the text.
 
 - **Exceptions:** `keep=["info@gemeinde.example", re.compile(r".*@gemeinde\.example")]` leaves exact values (case-insensitive) or values matching a pattern untouched.
-- **Authorities:** names such as "Steueramt St. Gallen" or "Handelsregisteramt Zürich" are not replaced (`protect_authorities=True`, the default).
+- **Authorities:** names such as "Steueramt St. Gallen", "Handelsregisteramt Zürich", "Gemeinde Wil" or "Kanton St. Gallen" are not replaced (`protect_authorities=True`, the default).
 - **Streaming:** `restore_stream(chunks, mapping)` or `Restorer(mapping)` restore an answer that arrives in pieces, also when a placeholder is split between two pieces.
 - **Presidio (optional):** `anonymize(text, detectors=[presidio_detector(analyzer, language="de")])` adds names in running text from Microsoft Presidio. Presidio is not a dependency and runs locally.
 
@@ -78,9 +80,50 @@ Read it as follows:
 - Names, companies and addresses are heuristics (titles, a list of about 440 first names, legal forms, street words). They find less than a language model would and can over-report. A person written two ways (`Anna Muster`, then `Muster`) gets two placeholders.
 - This is a small invented set, not a benchmark on real documents. Test with your own (invented) samples before you rely on it.
 
+## Acceptance
+
+Names, companies and addresses are heuristics, so they get their own acceptance, agreed before the recognisers were changed. Test texts are written blind by a reviewer who has not read the code, the word lists or the earlier sets, the way a fiduciary office writes: emails, payslips, bank bookings in capitals, chats in lower case, notes, signatures. Everything is invented.
+
+- **Protected** means every letter and digit of the value lies inside a placeholder of any kind. A partial hit that leaves `Muster` visible counts as missed.
+- **Tier 1, never missed (100 %):** a name with a salutation or title, a company with its legal form, street and number with postcode and place.
+- **Tier 2, everything else:** at least 80 % of names, 80 % of companies and 90 % of addresses.
+- **Precision:** at least 80 % of the hits of each kind touch a marked value. A false alarm costs the model some context; a miss leaks a value.
+- **Authorities:** never replaced.
+
+Set A was used for the first round of changes. Set B, written blind, showed what that round did not generalise, and the second round fixed the structural classes from B. Set C was then written blind by a fresh reviewer and decided the acceptance.
+
+**Result: 0.3.0 does not pass the whole acceptance.** On set C as counted, tier 1 held for persons and companies (100 %) and reached 86 % for addresses; tier 2 reached 45 % of names, 54 % of companies and 53 % of addresses. Afterwards only the three tier-1 address layouts from C (`/` or tab before the postcode, a house number range `140-142`) and two structural classes (double first names with one known half, `V.le`) were fixed, so C is no longer blind. Tier 1 is now complete on all three sets. Tier 2 stays below the minimum on C: names without a title or context word are found only when the first name is on the list. Until a recogniser with a language model is added, use 0.3.0 as one layer, not as the only protection for real documents.
+
+All three sets stay as regression tests. `python -m tests.acceptance -v` prints the table below and every miss.
+
+<!-- acceptance:start -->
+| Set | Kind | Tier 1 protected | Tier 2 protected | False alarms |
+|---|---|---|---|---|
+| A | PERSON | 24/24 (100%) | 38/40 (95%) | 0 of 62 hits |
+| A | ORG | 24/24 (100%) | 4/4 (100%) | 0 of 28 hits |
+| A | ADDRESS | 27/27 (100%) | 7/7 (100%) | 0 of 31 hits |
+| B | PERSON | 26/26 (100%) | 85/87 (98%) | 2 of 114 hits |
+| B | ORG | 25/25 (100%) | 16/16 (100%) | 0 of 41 hits |
+| B | ADDRESS | 24/24 (100%) | 20/21 (95%) | 0 of 36 hits |
+| C | PERSON | 33/33 (100%) | 39/76 (51%) | 4 of 84 hits |
+| C | ORG | 18/18 (100%) | 14/26 (54%) | 0 of 31 hits |
+| C | ADDRESS | 21/21 (100%) | 12/19 (63%) | 0 of 34 hits |
+<!-- acceptance:end -->
+
+For comparison, 0.2.0 protected 42 %, 50 % and 27 % (A, B, C) of the tier-1 names, 70 %, 75 % and 71 % of the tier-1 addresses, and 4 % of the tier-2 names on C.
+
+What still gets through, by structure:
+
+- **Names without any trigger** when the first name is not on the list (rarer names, many names of other origins), and table columns such as `Name;Vorname` without labels.
+- **A surname or a first name alone** (a child, "Schreiner Bühler") when the full name does not appear earlier in the same text.
+- **Lower-case chats** with names that are not on the list.
+- **Companies without legal form** whose first word is not a known trade or institution (`Physio am Bach`, `Frauenchor Oberdorf`), and name parts around `&` or `+` outside the legal-form match (`Brunschwiler & Hossmann Architekten`).
+- **Addresses** in table cells with `;` between postcode and place, and foreign formats.
+- **False alarms:** a title before a brand (`Dr. Bohne`), a field after a job title (`Leiterin Finanzen`), the month `August` next to a name.
+
 ## Limits
 
-`lang` ("de", "fr", "it", "en") is accepted and checked but has no effect: all four languages are always active, because Swiss texts mix them. Foreign IBANs, the old 11-digit AHV format and service numbers such as `0800 …` are not recognised. Names of other origins than the first-name list are found with a title or through Presidio.
+`lang` ("de", "fr", "it", "en") is accepted and checked but has no effect: all four languages are always active, because Swiss texts mix them. Foreign IBANs, the old 11-digit AHV format and service numbers such as `0800 …` are not recognised. The first-name list covers common names of many origins in Switzerland, not all; other names are found with a title, an initial, a context word, or through Presidio.
 
 No tool finds all personal data. Treat the result as one protective layer, not as a guarantee of anonymity.
 
