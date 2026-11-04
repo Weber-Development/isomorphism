@@ -188,3 +188,82 @@ def test_luhn_and_postal_checks() -> None:
     assert luhn_ok("4111111111111111") and not luhn_ok("4111111111111112")
     assert postal_ok("80-12345-6") and not postal_ok("80-12345-7")
     assert postal_ok("85-1234-3") and postal_ok("10-20304-8")
+
+
+def test_acceptance_sets() -> None:
+    """The agreed acceptance (README "Acceptance"). A and B pass completely. C, the set that
+    counted, misses tier 2 (see README); it must keep tier 1, precision and authorities."""
+    from tests.acceptance import SETS, failures
+
+    for name in ("A", "B"):
+        assert failures(SETS[name]) == [], name
+    assert failures(SETS["C"], tiers=(1,)) == []
+
+
+def test_acceptance_table_in_readme_is_current() -> None:
+    from pathlib import Path
+
+    from tests.acceptance import table
+
+    readme = Path(__file__).parent.parent / "README.md"
+    assert f"<!-- acceptance:start -->\n{table()}\n<!-- acceptance:end -->" in readme.read_text()
+
+
+def test_normalise_keeps_length_and_positions() -> None:
+    from isomorphism.entities import normalise
+
+    for text in (
+        "HANS-PETER AEBERSOLD\nWERKSTRASSE 9",
+        "hoi sandra, frau meier-huber fragt",
+        "ß İ",
+    ):
+        assert len(normalise(text)) == len(text)
+    assert normalise("HEIZUNG FORSTER AG") == "Heizung Forster AG"
+    assert normalise("hoi sandra, frau meier-huber fragt") == "hoi Sandra, Frau Meier-Huber fragt"
+
+
+def test_names_in_capitals_and_without_capitals() -> None:
+    anon, _ = anonymize("Zahlbar durch\nHANS-PETER AEBERSOLD\nALPENBLICK 27\n3612 STEFFISBURG")
+    assert anon == "Zahlbar durch\n[PERSON_1]\n[ADDRESS_1]"
+    anon, _ = anonymize("hoi sandra, die adresse ist hauptstrasse 44, 5000 aarau. lg dani")
+    assert anon == "hoi [PERSON_1], die adresse ist [ADDRESS_1]. lg [PERSON_2]"
+
+
+def test_initials_but_not_abbreviations() -> None:
+    anon, _ = anonymize("Unterschrift: B. Bürgi. Belege z. B. Kunden, u. a. Lieferanten.")
+    assert anon == "Unterschrift: [PERSON_1]. Belege z. B. Kunden, u. a. Lieferanten."
+
+
+def test_names_without_list_after_context_words() -> None:
+    text = "Steuerpflichtige: Gashi Fatmire und Gashi Besnik, Im Grund 11, 8952 Schlieren"
+    anon, _ = anonymize(text)
+    assert anon == "Steuerpflichtige: [PERSON_1] und [PERSON_2], [ADDRESS_1]"
+
+
+def test_gemeinde_and_kanton_are_authorities() -> None:
+    anon, _ = anonymize("Gutschrift Gemeinde Wil, Steuern Kanton St. Gallen, Gutschrift Lea Bieri")
+    assert anon == "Gutschrift Gemeinde Wil, Steuern Kanton St. Gallen, Gutschrift [PERSON_1]"
+
+
+def test_authority_words_are_not_reused_as_names() -> None:
+    for text in (
+        "Gutschrift Gemeinde Wil. Die Gemeinde hat bezahlt.",
+        "Zahlung an Steueramt Zürich. Unser Büro ist in Zürich.",
+    ):
+        assert anonymize(text)[0] == text
+
+
+def test_legal_forms_in_capitals() -> None:
+    anon, _ = anonymize("MUSTER KLG, MUSTER LTD, MUSTER INC, MUSTER LLC")
+    assert anon == "[ORG_1], [ORG_2], [ORG_3], [ORG_4]"
+
+
+def test_streets_after_elided_articles() -> None:
+    for text in (
+        "Rue d'Italie 5, 1200 Genève",
+        "Rue de l'Hôpital 3",
+        "Chemin d'Entre-Bois 7",
+        "Av. de l’Avant-Poste 4, 1005 Lausanne",
+        "Via dell'Indipendenza 2, 6900 Lugano",
+    ):
+        assert anonymize(text)[0] == "[ADDRESS_1]", text

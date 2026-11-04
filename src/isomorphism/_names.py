@@ -5,8 +5,9 @@ Presidio backend (isomorphism.presidio) when you need more.
 Words that are also common nouns or verbs (Mark, Bill, Rose, Will, Art, Hope ...) are left out.
 """
 
-FIRST_NAMES = frozenset(
-    """
+FIRST_NAMES = (
+    frozenset(
+        """
     Adrian Adriano Agnes Albert Alberto Alessandro Alessia Alex Alexander Alexandra Alfred
     Alice Alina Alois Amelie Andrea Andreas Andre André Andrew Angela Angelika Anita Anja
     Anke Ann Anna Annabelle Anne Annemarie Anton Antoine Antonia Antonio Armin Arnold Arthur
@@ -46,4 +47,48 @@ FIRST_NAMES = frozenset(
     Véronique Victor Viktor Vincent Vincenzo Walter Werner Wilhelm William Willi Wolfgang
     Yannick Yvonne Yves Zoe
     """.split()
+    )
+    | frozenset(
+        # Swiss short forms, as they appear in chats and notes.
+        """
+    Andi Babs Beni Chrigi Dani Fabi Fränzi Gabi Housi Kari Köbi Mäx Mike Moni Nici Röbi Sämi
+    Sepp Steffi Susi Vreni Lisi Conny Tom
+    """.split()
+    )
+    | frozenset(
+        # Further names common in Switzerland: Romansh, Italian, Spanish, Portuguese, Albanian,
+        # Serbo-Croatian/Bosnian, Turkish/Kurdish, Arabic, Tamil and Indian, Eritrean/Ethiopian,
+        # West African, Polish. From general knowledge, not from the test texts. Names that are
+        # also common words in German, French, Italian or English (Can, Luz, Gold ...) are left out.
+        """
+    Gion Gian Curdin Duri Flurin Flurina Ladina Mevina Seraina Andri Uorschla Mengia Chasper
+    Nadja Nadine Gianluca Gianmarco Giacomo Federico Riccardo Alessio Davide Simona Federica
+    Elisa Ilaria Martina Valeria Rocco Pasquale Antonella Carmela Concetta Raffaele Domenico
+    Alejandro Javier Carlos Miguel Pablo Sergio Diego Jorge Alberto Lucía Ana Pilar Rocío
+    Mercedes Dolores Consuelo Inmaculada Montserrat Nuria Raquel Beatriz
+    João Joao José Jose Tiago Rui Nuno Duarte Gonçalo Rodrigo Vasco Bruno Ricardo Fábio Sérgio
+    Inês Ines Mariana Beatriz Joana Catarina Leonor Filipa Rita Fátima Conceição Graça Elina
+    Arben Besnik Valon Ardit Arbnor Ardian Bekim Blerim Driton Fatmir Florim Gëzim Ilir Kujtim
+    Labinot Liridon Lulzim Mentor Naim Shkelzim Shpend Valmir Visar Xhevdet Burim Agron Artan
+    Fatmire Blerta Leonora Albulena Arta Besarta Drita Donika Fjolla Lirije Mimoza Valbona
+    Vjosa Shqipe Teuta Hana Ardita Edona Era Elira Elona Majlinda Nora Rina Shpresa Vlora
+    Dragan Milan Goran Zoran Dejan Nenad Nikola Marko Stefan Milica Jelena Ivana Dragana Snežana
+    Tomislav Ivica Damir Mirko Mario Josip Ante Luka Mateo Ana Marija Kristina Ivona Petra
+    Emir Amir Edin Adnan Haris Emina Amra Lejla Selma Aida Alma Nermina
+    Mehmet Mustafa Ahmet Hüseyin Hasan Ibrahim Ismail Yusuf Murat Emre Burak Kemal Cem Serkan
+    Ayşe Ayse Fatma Emine Hatice Zeynep Elif Merve Esra Büşra Özlem Derya Gül Sevgi Tülay
+    Muharrem Recep Yilmaz Kaan Deniz Baran Rojda Berfin Dilan Zilan Rojin Azad Rêber
+    Mohammed Mohamed Muhammad Ahmed Ali Omar Youssef Karim Hamza Khaled Samir Tarek Bilal
+    Fatima Aisha Amina Khadija Mariam Yasmin Leila Nour Rania Salma Samira Zainab
+    Priya Arjun Kumar Suresh Ramesh Rajesh Ganesh Vijay Anand Karthik Pradeep Prakash Sanjay
+    Lakshmi Kavitha Nirmala Shanthi Vasanthi Thushara Tharshini Thamilini Kajan Mathan Nirojan
+    Sivakumar Thanushan Thurka Janani Abinaya Kiruthika Sutharsan Mayuran Anushan Rajan
+    Yonas Yohannes Filmon Merhawi Mussie Tesfay Tesfalem Habtom Senait Selam Semhar Saba Helen
+    Tsega Luwam Rahwa Feven Meron Abel Dawit Kidane Ermias Aklilu Hiwet Mebrat
+    Chidi Emeka Chinedu Ngozi Ifeoma Adaeze Amara Oluwaseun Ousmane Mamadou Moussa Ibrahima
+    Aminata Fatou Awa Mariama Kadiatou Seydou Lamine Abdoulaye Boubacar
+    Andrzej Piotr Krzysztof Tomasz Marcin Paweł Michał Agnieszka Katarzyna Małgorzata Joanna
+    Magdalena Monika Ewa Zofia Wojciech
+    """.split()
+    )
 )

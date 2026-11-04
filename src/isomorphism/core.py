@@ -77,22 +77,23 @@ def detect(
     """
     _check_lang(lang)
     keep = tuple(keep)
-    authorities = (
-        [m.span() for m in entities.AUTHORITY.finditer(text)] if protect_authorities else []
-    )
+    official = bytearray(len(text))  # 1 inside a name of an authority
+    if protect_authorities:
+        for m in entities.AUTHORITY.finditer(entities.normalise(text)):
+            official[m.start() : m.end()] = b"\x01" * (m.end() - m.start())
     candidates = (
         c
         for d in (*DETECTORS, *entities.DETECTORS, *detectors)
         for c in d(text)
         if not _kept(text[c.start : c.end], keep)
-        and not (c.kind in _PROTECTED and any(s < c.end and c.start < e for s, e in authorities))
+        and not (c.kind in _PROTECTED and any(official[c.start : c.end]))
     )
     found = sorted(candidates, key=lambda c: (-c.confidence, c.start - c.end, c.start))
-    taken: list[tuple[int, int]] = []
+    taken = bytearray(len(text))  # 1 where a hit was kept
     out: list[Finding] = []
     for c in found:
-        if all(c.end <= s or c.start >= e for s, e in taken):
-            taken.append((c.start, c.end))
+        if not any(taken[c.start : c.end]):
+            taken[c.start : c.end] = b"\x01" * (c.end - c.start)
             out.append(Finding(c.kind, c.start, c.end, c.confidence, c.detector, c.checksum_ok))
     return sorted(out, key=lambda f: f.start)
 

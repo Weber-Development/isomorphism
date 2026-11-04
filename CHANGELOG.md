@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0
+
+Persons, companies and addresses are measured against an acceptance on three blind, invented Swiss test sets (README "Acceptance"). 0.3.0 finds every name with a title, every company with a legal form and every full address in all three sets, where 0.2.0 found 27 to 50 % of those names. It does not reach the tier-2 minimum on the last blind set for any of the three kinds: names 51 % (0.2.0: 4 %), companies 54 % (0 %), addresses 63 % (47 %).
+
+- Persons: names after a title with any first name (`Frau Dr. Patrizia Caflisch`), more titles (`Me`, `Fam.`, `Familie`, `Notar`, `avv.`, `Dr. med. dent.`), initials (`B. Bürgi`, `J.-P. Chappuis`), particles (`Dos Santos`, `van der Meer`), names after context words (`Mieter:`, `Gutschrift`, `Zahlbar durch`, `my wife`, `Lieber`, `CC:`) and under a closing formula, `X und Y`, surname first (`Krasniqi Arben,`). Double first names with one known half (`Rose-Marie`). Every name word of a found person is found again later. More first names of many origins and Swiss short forms (`Dani`, `Vreni`).
+- Companies: legal form in front (`Verein …`, `…genossenschaft …`), trade and name (`Bäckerei Lüthi`, `Notariat Zumstein & Partner`, `Gashi Gipserei`), particles and `& Co.` inside names.
+- Addresses: any words with number when postcode and place follow (`Im Grund 11, 8952 Schlieren`), `Postfach`, canton after the place (`Wil SG`), `Bahnhofpl.`, `Pl.`, `V.`, `Via S. Gottardo`, `Via ai Ronchi`, `V.le`, house number ranges (`140-142`), `|`, `/`, `;` or tab as separator, a postcode after `Wohnsitz:`.
+- Text in capitals (bank bookings, payment slips) and chats without capitals are read as if written normally.
+- Authorities: `Gemeinde X`, `Kanton X`, `Commune de X` and similar are not replaced.
+- `tests/acceptance.py` with three blind sets and the agreed thresholds; the README shows the result.
+- More is replaced than in 0.2.0. Overlap checks no longer grow with the square of the hits, and a word never starts inside a hyphen chain: 200,000 characters take up to about 2 s, also for adversarial input.
+- Words of an authority are never reused as a name elsewhere in the text.
+
 ## 0.2.0
 
 - New recognisers: persons (titles, first-name list, surname again later in the text, first name alone), companies by legal form, addresses (street with number, postcode and place), dates of birth after context words, card numbers (Luhn) and accounts (PostFinance mod 10, or digits after `Konto`, `compte`, `conto`, `account`).
