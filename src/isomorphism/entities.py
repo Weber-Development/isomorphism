@@ -18,7 +18,8 @@ _LO = "a-zäöüéèàâêîôûçñßøáíóúýćčšžđłńśźżőűăşţ
 # One capitalised word, also hyphenated or with an apostrophe (Müller-Keller, D'Angelo, P'tits).
 # Never starts inside a hyphen or apostrophe chain, so "Aa-Aa-Aa-…" is scanned once, not once
 # per hyphen.
-_WORD = rf"(?<![\w'’-])[{_UP}](?:[{_LO}]+|['’][{_UP}]?[{_LO}]+)(?:[-'’][{_UP}]?[{_LO}]+)*"
+_WORD_CORE = rf"[{_UP}](?:[{_LO}]+|['’][{_UP}]?[{_LO}]+)(?:[-'’][{_UP}]?[{_LO}]+)*"
+_WORD = rf"(?<![\w'’-]){_WORD_CORE}"
 _PARTICLE = r"(?i:von der|van der|von|van|de la|de|di|da|del|della|dos|zu|le|la|ten|ter)"
 _SURNAME = rf"(?:{_PARTICLE}[ ])?{_WORD}"
 # An initial: "B.", "Th.", "J.-P."; not "St." (St. Gallen) or "Nr.".
@@ -367,8 +368,10 @@ _STREET_DE = (
 _STREET_ROMANCE = (
     rf"(?:Rue|Avenue|Av\.|Chemin|Ch\.|Route|Rte|Place|Pl\.|Boulevard|Bd|Quai|Impasse|Via|V\.|"
     rf"Viale|V\.le|Piazza|P\.za|Corso|Vicolo|Strada|Salita)[ ]+"
-    rf"(?:(?:du|de la|de l'|de|des|à la|au|aux|della|dei|degli|delle|del|dal|ai|al|alla|alle|"
-    rf"agli|sul|sulla|d')[ ]?)?(?:[{_UP}]\.[ ])?{_WORD}(?:[ ]{_WORD})?"
+    rf"(?:(?:du|de la|de|des|à la|au|aux|della|dei|degli|delle|del|dal|ai|al|alla|alle|agli|"
+    rf"sul|sulla)[ ]|(?:de l|d|dell|dall|all|sull|nell)['’])?(?:[{_UP}]\.[ ])?"
+    # After an elided article the word follows the apostrophe: "Rue d'Italie", "de l'Hôpital".
+    rf"(?:(?<=['’]){_WORD_CORE}|{_WORD})(?:[ ]{_WORD})?"
 )
 _NUMBER = r"[ ]{1,2}\d{1,4}(?:-\d{1,4})?[ ]?[a-zA-Z]?(?![\w])"
 _STREET = rf"(?:(?:{_WORD}[ ])?{_STREET_DE}|{_STREET_ROMANCE}){_NUMBER}"

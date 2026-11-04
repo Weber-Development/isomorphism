@@ -256,3 +256,14 @@ def test_authority_words_are_not_reused_as_names() -> None:
 def test_legal_forms_in_capitals() -> None:
     anon, _ = anonymize("MUSTER KLG, MUSTER LTD, MUSTER INC, MUSTER LLC")
     assert anon == "[ORG_1], [ORG_2], [ORG_3], [ORG_4]"
+
+
+def test_streets_after_elided_articles() -> None:
+    for text in (
+        "Rue d'Italie 5, 1200 Genève",
+        "Rue de l'Hôpital 3",
+        "Chemin d'Entre-Bois 7",
+        "Av. de l’Avant-Poste 4, 1005 Lausanne",
+        "Via dell'Indipendenza 2, 6900 Lugano",
+    ):
+        assert anonymize(text)[0] == "[ADDRESS_1]", text
