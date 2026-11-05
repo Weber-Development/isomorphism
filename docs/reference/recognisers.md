@@ -17,6 +17,8 @@ description: Formats, checks and confidence per kind.
 | `CARD` | 0.95 valid, 0.50 wrong check digit | 16 digits in groups of four, 19 digits, or Amex 4-6-5, Luhn |
 | `ACCOUNT` | 0.90 valid, 0.40 wrong check digit (PostFinance `80-12345-6`), 0.80 digits after `Konto`, `compte`, `conto`, `account` | The context form needs at least six digits |
 
+Known names (`isomorphism.known.known_detector`, see the guide): 0.99 for a full name in any case or order, 0.6 for a single capitalised word of it.
+
 Wrong check digits are reported on purpose: a typo in a document is still personal data.
 
 When two hits overlap, the higher confidence wins, then the longer match. This is why the digits inside an IBAN do not also come out as a phone number.

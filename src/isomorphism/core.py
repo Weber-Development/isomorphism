@@ -72,9 +72,23 @@ def detect(
 
     ``keep``: values that must stay in the text, as exact strings (case-insensitive) or
     compiled patterns that must match the whole value.
-    ``detectors``: extra recognisers, for example ``isomorphism.presidio.presidio_detector``.
+    ``detectors``: extra recognisers, for example ``isomorphism.presidio.presidio_detector``
+    or ``isomorphism.known.known_detector``.
     ``protect_authorities``: names of authorities such as "Steueramt St. Gallen" are not replaced.
     """
+    return [
+        Finding(c.kind, c.start, c.end, c.confidence, c.detector, c.checksum_ok)
+        for c in _resolve(text, lang, keep, detectors, protect_authorities)
+    ]
+
+
+def _resolve(
+    text: str,
+    lang: str | None,
+    keep: Iterable[str | re.Pattern[str]],
+    detectors: Iterable[Detector],
+    protect_authorities: bool,
+) -> list[Candidate]:
     _check_lang(lang)
     keep = tuple(keep)
     official = bytearray(len(text))  # 1 inside a name of an authority
@@ -90,12 +104,12 @@ def detect(
     )
     found = sorted(candidates, key=lambda c: (-c.confidence, c.start - c.end, c.start))
     taken = bytearray(len(text))  # 1 where a hit was kept
-    out: list[Finding] = []
+    out: list[Candidate] = []
     for c in found:
         if not any(taken[c.start : c.end]):
             taken[c.start : c.end] = b"\x01" * (c.end - c.start)
-            out.append(Finding(c.kind, c.start, c.end, c.confidence, c.detector, c.checksum_ok))
-    return sorted(out, key=lambda f: f.start)
+            out.append(c)
+    return sorted(out, key=lambda c: c.start)
 
 
 def anonymize(
@@ -118,11 +132,11 @@ def anonymize(
     counters: dict[str, int] = {}
     parts: list[str] = []
     pos = 0
-    for f in detect(
-        text, lang, keep=keep, detectors=detectors, protect_authorities=protect_authorities
-    ):
+    for c in _resolve(text, lang, keep, detectors, protect_authorities):
+        f = Finding(c.kind, c.start, c.end, c.confidence, c.detector, c.checksum_ok)
         value = text[f.start : f.end]
-        ph = by_value.get((f.kind, value))
+        same = (f.kind, value if c.key is None else "\x00" + c.key)
+        ph = by_value.get(same)
         if ph is None:
             n = counters.get(f.kind, 0)
             while True:
@@ -131,7 +145,7 @@ def anonymize(
                 if ph not in in_text:
                     break
             counters[f.kind] = n
-            by_value[(f.kind, value)] = ph
+            by_value[same] = ph
             mapping[ph] = value
         mapping.findings.append(replace(f, placeholder=ph))
         parts += (text[pos : f.start], ph)

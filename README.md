@@ -112,6 +112,23 @@ All three sets stay as regression tests. `python -m tests.acceptance -v` prints 
 
 For comparison, 0.2.0 protected 42 %, 50 % and 27 % (A, B, C) of the tier-1 names, 70 %, 75 % and 71 % of the tier-1 addresses, and 4 % of the tier-2 names on C.
 
+### Known names
+
+An office knows its clients. Passed with `known_detector` (see `docs/guides/known-names.md`), their names are always replaced. The table simulates the best case: every person and company whose full name (two words or more) is marked in a text is passed as a client, so a surname or first name alone is still measured, not handed over. A second run passes 500 invented names that appear in no text.
+
+<!-- known:start -->
+| Set | Kind | Tier 2, patterns | Tier 2, clients known | False alarms, 500 strangers |
+|---|---|---|---|---|
+| A | PERSON | 38/40 (95%) | 39/40 (98%) | 0 of 62 hits |
+| A | ORG | 4/4 (100%) | 4/4 (100%) | 0 of 28 hits |
+| B | PERSON | 85/87 (98%) | 85/87 (98%) | 2 of 114 hits |
+| B | ORG | 16/16 (100%) | 16/16 (100%) | 0 of 41 hits |
+| C | PERSON | 39/76 (51%) | 58/76 (76%) | 4 of 87 hits |
+| C | ORG | 14/26 (54%) | 26/26 (100%) | 0 of 31 hits |
+<!-- known:end -->
+
+With known clients, set C protects 76 % of the names without a title, still below the 80 % minimum: what remains are people whose full name never appears in the text (children, `Gion`, a surname in a member list) and lower-case chats, where only full names are matched. Companies reach 100 %. The 500 unrelated names add no false alarm.
+
 What still gets through, by structure:
 
 - **Names without any trigger** when the first name is not on the list (rarer names, many names of other origins), and table columns such as `Name;Vorname` without labels.
@@ -123,7 +140,7 @@ What still gets through, by structure:
 
 ## Limits
 
-`lang` ("de", "fr", "it", "en") is accepted and checked but has no effect: all four languages are always active, because Swiss texts mix them. Foreign IBANs, the old 11-digit AHV format and service numbers such as `0800 …` are not recognised. The first-name list covers common names of many origins in Switzerland, not all; other names are found with a title, an initial, a context word, or through Presidio.
+`lang` ("de", "fr", "it", "en") is accepted and checked but has no effect: all four languages are always active, because Swiss texts mix them. Foreign IBANs, the old 11-digit AHV format and service numbers such as `0800 …` are not recognised. The first-name list covers common names of many origins in Switzerland, not all; other names are found with a title, an initial, a context word, as known names, or through Presidio.
 
 No tool finds all personal data. Treat the result as one protective layer, not as a guarantee of anonymity.
 

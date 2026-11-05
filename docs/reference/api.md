@@ -9,7 +9,7 @@ Returns `(text_with_placeholders, mapping)`.
 
 - `lang`: `"de"`, `"fr"`, `"it"`, `"en"` or `None` (a region such as `"de-CH"` is accepted). Anything else raises `ValueError`. It has no effect: all four languages are always active, because Swiss texts mix them.
 - `keep`: values that stay in the text: exact strings (case-insensitive) or compiled patterns that must match the whole value.
-- `detectors`: extra recognisers, for example `presidio_detector(...)` from `isomorphism.presidio`.
+- `detectors`: extra recognisers, for example `known_detector(names)` from `isomorphism.known` (names you already know, see the guide) or `presidio_detector(...)` from `isomorphism.presidio`.
 - `protect_authorities`: names such as "Steueramt St. Gallen" are not replaced (default `True`).
 
 Identical values get the same placeholder inside one call. A placeholder that already stands in the input text, like a literal `[AHV_1]`, is never reused.

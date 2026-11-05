@@ -288,3 +288,58 @@ def test_chart_of_accounts_is_not_an_address() -> None:
         assert "8000 Zürich" in found, text
     names = "Hans Muster\n8000 Zürich\nPeter Beispiel\n3000 Bern\nAnna Probe\n6900 Lugano"
     assert "3000 Bern" in [names[f.start : f.end] for f in detect(names)]
+
+
+def test_known_names_share_one_placeholder_in_any_case_and_order() -> None:
+    from isomorphism.known import known_detector
+
+    clients = known_detector(["Arben Krasniqi"])
+    text = "Gutschrift KRASNIQI ARBEN 300.00\nHerr Arben Krasniqi und krasniqi, arben."
+    safe, mapping = anonymize(text, detectors=[clients])
+    assert safe == "Gutschrift [PERSON_1] 300.00\nHerr [PERSON_1] und [PERSON_1]."
+    assert mapping["[PERSON_1]"] == "KRASNIQI ARBEN", "the first form seen comes back"
+    assert {f.detector for f in mapping.findings} == {"known"}
+
+
+def test_known_single_words_but_not_ordinary_surnames() -> None:
+    from isomorphism.known import known_detector
+
+    clients = known_detector(["Ottilia Zumsteg-Keller", "Fridolin Weber"])
+    text = "Ottilia hat angerufen. Zumsteg auch. Der Keller ist nass, Weber kommt."
+    found = [text[f.start : f.end] for f in detect(text, detectors=[clients])]
+    assert "Ottilia" in found and "Zumsteg" in found
+    assert "Keller" not in found and "Weber" not in found
+
+
+def test_known_companies_and_groups() -> None:
+    from isomorphism.known import known_detector
+
+    clients = known_detector(["Reinigung Blitzblank GmbH", "Familie Inderbitzin"])
+    text = "Rechnung Blitzblank, bezahlt an Reinigung Blitzblank. Familie Inderbitzin zahlt."
+    safe, _ = anonymize(text, detectors=[clients])
+    assert "Blitzblank" not in safe and "Inderbitzin" not in safe
+    assert "Rechnung" in safe and "zahlt" in safe
+
+
+def test_known_names_kind_and_limits() -> None:
+    from isomorphism.known import MAX_ENTRIES, known_detector
+
+    text = "Bäckerei Lüthi und Ramun Caduff"
+    kinds = {
+        text[f.start : f.end]: f.kind
+        for f in detect(text, detectors=[known_detector(["Bäckerei Lüthi", "Ramun Caduff"])])
+    }
+    assert kinds == {"Bäckerei Lüthi": "ORG", "Ramun Caduff": "PERSON"}
+    with pytest.raises(ValueError):
+        known_detector([("PLACE", "Wil")])
+    with pytest.raises(ValueError):
+        known_detector(f"Name{i} Test" for i in range(MAX_ENTRIES + 1))
+
+
+def test_known_table_in_readme_is_current() -> None:
+    from pathlib import Path
+
+    from tests.acceptance import known_table
+
+    readme = Path(__file__).parent.parent / "README.md"
+    assert f"<!-- known:start -->\n{known_table()}\n<!-- known:end -->" in readme.read_text()

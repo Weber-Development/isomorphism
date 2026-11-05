@@ -17,6 +17,7 @@ from collections import Counter
 from dataclasses import dataclass
 
 from isomorphism import detect
+from isomorphism.known import known_detector
 
 from . import acceptance_a, acceptance_b, acceptance_c
 from .cases import Case, _parse
@@ -79,15 +80,42 @@ def _covered(case: Case, spans: list[tuple[int, int]], start: int, end: int) -> 
 Stats = dict[tuple[str, int], Counter[str]]
 
 
-def score(cases: list[Case]) -> tuple[Stats, Counter[str], list[Miss], list[str]]:
+# Known names: the office passes its clients. "clients" simulates the best case, every person
+# and company whose full name is marked in a text is a client; "strangers" passes 500 invented
+# names that appear in no text, to show that a long client list costs no precision.
+_SYL1 = "Hin Wal Brun Tschan Mor Zur Kel Lin Sut Rüe".split()
+_SYL2 = "egger mattli wiler bühler matter".split()
+_FIRST = "Ottilia Fridolin Arbnora Severin Livia Ramun Dragana Jolanda Ueli Mirela".split()
+STRANGERS = [f"{f} {a}{b}" for f in _FIRST for a in _SYL1 for b in _SYL2]
+_STRANGERS = known_detector(STRANGERS)
+
+
+def _detectors(case: Case, known: str | None) -> list:  # type: ignore[type-arg]
+    if known == "clients":
+        # A client list holds full names: only marked values of two words or more are passed,
+        # so a surname or first name alone in the text is measured, not handed over.
+        values = [
+            (k, case.text[s:e])
+            for k, s, e in case.expected
+            if k in ("PERSON", "ORG") and len(case.text[s:e].split()) >= 2
+        ]
+        return [known_detector(values)] if values else []
+    if known == "strangers":
+        return [_STRANGERS]
+    return []
+
+
+def score(
+    cases: list[Case], known: str | None = None
+) -> tuple[Stats, Counter[str], list[Miss], list[str]]:
     """Per (kind, tier): expected, protected. Per kind: hits and false hits. Misses, and the
-    false hits on authorities."""
+    false hits on authorities. ``known``: None, "clients" or "strangers" (see above)."""
     stats: Stats = {(k, t): Counter() for k in KINDS for t in (1, 2)}
     hits: Counter[str] = Counter()
     misses: list[Miss] = []
     on_authority: list[str] = []
     for case in cases:
-        findings = detect(case.text, case.lang)
+        findings = detect(case.text, case.lang, detectors=_detectors(case, known))
         spans = [(f.start, f.end) for f in findings]
         for kind, start, end in case.expected:
             if kind not in KINDS:
@@ -115,8 +143,10 @@ def score(cases: list[Case]) -> tuple[Stats, Counter[str], list[Miss], list[str]
     return stats, hits, misses, on_authority
 
 
-def failures(cases: list[Case], tiers: tuple[int, ...] = (1, 2)) -> list[str]:
-    stats, hits, _, on_authority = score(cases)
+def failures(
+    cases: list[Case], tiers: tuple[int, ...] = (1, 2), known: str | None = None
+) -> list[str]:
+    stats, hits, _, on_authority = score(cases, known)
     out = [f"authority replaced in {a}" for a in on_authority]
     for (kind, t), c in stats.items():
         if t in tiers and c["expected"] and c["protected"] / c["expected"] < MIN_PROTECTED[t][kind]:
@@ -125,6 +155,28 @@ def failures(cases: list[Case], tiers: tuple[int, ...] = (1, 2)) -> list[str]:
         if hits[kind] and 1 - hits[kind + "_false"] / hits[kind] < MIN_PRECISION:
             out.append(f"{kind}: {hits[kind + '_false']} of {hits[kind]} hits are false")
     return out
+
+
+def known_table() -> str:
+    """Tier 2 and false alarms with known names, next to the patterns alone."""
+    rows = [
+        "| Set | Kind | Tier 2, patterns | Tier 2, clients known | False alarms, 500 strangers |",
+        "|---|---|---|---|---|",
+    ]
+    for name, cases in SETS.items():
+        runs = [score(cases, k) for k in (None, "clients", "strangers")]
+        for kind in KINDS:
+            if kind == "ADDRESS":
+                continue
+            cells = []
+            for stats, *_ in runs[:2]:
+                c = stats[(kind, 2)]
+                n = c["expected"]
+                cells.append(f"{c['protected']}/{n} ({c['protected'] / (n or 1):.0%})")
+            hits = runs[2][1]
+            false = f"{hits[kind + '_false']} of {hits[kind]} hits"
+            rows.append(f"| {name} | {kind} | {cells[0]} | {cells[1]} | {false} |")
+    return "\n".join(rows)
 
 
 def table() -> str:
@@ -147,6 +199,8 @@ def table() -> str:
 
 if __name__ == "__main__":
     print(table())
+    print()
+    print(known_table())
     if "-v" in sys.argv:
         for name, cases in SETS.items():
             result = score(cases)

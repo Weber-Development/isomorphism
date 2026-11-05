@@ -17,6 +17,9 @@ class Candidate:
     confidence: float
     detector: str
     checksum_ok: bool | None = None
+    # Hits with the same kind and key share one placeholder even when their text differs
+    # ("Arben Krasniqi" and "KRASNIQI, Arben"). None: the text itself is the key.
+    key: str | None = None
 
 
 def _digits(s: str) -> str:
