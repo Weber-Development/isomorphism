@@ -399,20 +399,30 @@ _ADDRESS_LEAD = re.compile(
     r"\b(?:AG|GmbH|GMBH|SA|Sàrl|Sagl)\s+)$"
 )
 _PLZ_NUM = re.compile(r"(?<![\d.])[1-9]\d{3}(?!\d)")
-# A line that starts with four digits and a word, as in a chart of accounts ("1000 Kasse").
-_NUMBERED_LINE = re.compile(r"[ \t]*\d{4}[ \t]+\S")
+# A line that starts with a number of four or more digits and a word, as in a chart of accounts
+# ("1000 Kasse"). A phone number ("0041 44 ...") or an amount ("1500 CHF") is not such a line.
+_NUMBERED_LINE = re.compile(r"[ \t]*\d{4,}[ \t]+[^\W\d_]")
 
 
-def _in_numbered_list(text: str, start: int) -> bool:
-    """True when the line before or after `start`'s line also starts with four digits and a word:
-    a chart of accounts or a price list, not an address block."""
-    line_start = text.rfind("\n", 0, start) + 1
-    if line_start > 0:
-        prev_start = text.rfind("\n", 0, line_start - 1) + 1
-        if _NUMBERED_LINE.match(text, prev_start, line_start - 1):
-            return True
-    line_end = text.find("\n", start)
-    return line_end != -1 and bool(_NUMBERED_LINE.match(text, line_end + 1))
+def _in_numbered_list(text: str, line_start: int) -> bool:
+    """True when at least two of the two lines before and the two lines after the line at
+    `line_start` start with a number and a word: a chart of accounts or a price list. An address
+    block has at most one such neighbour."""
+    starts = []
+    i = line_start
+    for _ in range(2):  # the two lines before
+        if i == 0:
+            break
+        i = text.rfind("\n", 0, i - 1) + 1
+        starts.append(i)
+    i = line_start
+    for _ in range(2):  # the two lines after
+        i = text.find("\n", i)
+        if i == -1:
+            break
+        i += 1
+        starts.append(i)
+    return sum(1 for j in starts if _NUMBERED_LINE.match(text, j)) >= 2
 
 
 def addresses(text: str) -> Iterator[Candidate]:
@@ -437,8 +447,10 @@ def addresses(text: str) -> Iterator[Candidate]:
         in_caps = bool(capitals[m.start()])
         if not marked and not in_caps and not _ADDRESS_LEAD.search(before):
             continue
-        at_line_start = text[text.rfind("\n", 0, m.start()) + 1 : m.start()].strip() == ""
-        if not marked and at_line_start and _in_numbered_list(text, m.start()):
+        i = m.start()
+        while i and text[i - 1] in " \t":
+            i -= 1
+        if not marked and (i == 0 or text[i - 1] == "\n") and _in_numbered_list(text, i):
             continue
         if 1900 <= num <= 2099 and not marked:
             continue

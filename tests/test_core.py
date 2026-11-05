@@ -277,3 +277,10 @@ def test_chart_of_accounts_is_not_an_address() -> None:
     assert [letter[f.start : f.end] for f in detect(letter) if f.kind == "ADDRESS"] == [
         "Kirchweg 4\n8000 Zürich"
     ]
+    # One numbered neighbour is not a list: the place stays protected.
+    for text in (
+        "Hans Muster\nPostfach\n8000 Zürich\n0041 44 123 45 67",
+        "2025 Steuererklärung\n8000 Zürich",
+        "Hans Muster\n8000 Zürich\n1000 Stück Schrauben",
+    ):
+        assert "8000 Zürich" in [text[f.start : f.end] for f in detect(text)], text
