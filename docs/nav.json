@@ -11,6 +11,7 @@
       "label": "Guides",
       "items": [
         "guides/fastapi",
+        "guides/known-names",
         "guides/presidio"
       ]
     },

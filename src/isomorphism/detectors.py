@@ -17,6 +17,10 @@ class Candidate:
     confidence: float
     detector: str
     checksum_ok: bool | None = None
+    # The spelling a hit stands for: hits of one kind with the same key share a placeholder
+    # even when their text differs ("KRASNIQI, Arben" with key "Arben Krasniqi" and the text
+    # "Arben Krasniqi"). None: the text itself is the key.
+    key: str | None = None
 
 
 def _digits(s: str) -> str:

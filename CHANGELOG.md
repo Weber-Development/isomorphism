@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0
+
+- Known names: `isomorphism.known.known_detector(names)` always replaces names the caller already knows, such as the clients of an office. Full names in any case and order (`KRASNIQI ARBEN`, `Krasniqi, Arben`, also as an entry), with particles (`da Silva Maria`) and with umlauts as bank statements write them (`RUEEGG`) share one placeholder. Single capitalised words of a name are found too, except surnames that are ordinary words or places (`Keller`, `Koch`, `Zug` …); an entry of one word is only such a word. Companies with and without legal form, in any case. Nothing is kept between calls.
+- A recogniser can give hits a `key`, the spelling they stand for: hits with the same kind and key share one placeholder although their text differs. `restore()` then gives back the first form seen.
+- Acceptance: a second table shows tier 2 with known clients (set C names 51 % → 76 %, companies 54 % → 100 %) and that neither the clients nor 500 unrelated names add a false alarm.
+
 ## 0.3.1
 
 - A postcode at the start of a line is no longer taken for postcode and place when the line next to it and at least one more of the two lines before and the two after start with a number and a word: a chart of accounts (`1000 Kasse`, `6570 Informatikaufwand`) or a price list stays in the text. A postcode line with one such neighbour (`2025 Steuererklärung`, a phone number) is still an address. Known gap: a numbered client list with `PLZ Ort` on its own line between the entries (`1001 Muster Hans\n8000 Zürich\n1002 …`), or three or more lines of `PLZ Ort` in a row, loses the place. The acceptance table is unchanged.
