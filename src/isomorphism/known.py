@@ -48,6 +48,7 @@ WORD = 0.6  # like a surname found again: loses to a pattern hit that covers the
 _GROUP = rf"(?:{_TITLE}|Erben|Erbengemeinschaft|Ehepaar|Eheleute|Geschwister|Héritiers|Eredi|Firma)"
 _LEADING_GROUP = re.compile(rf"^(?:{_GROUP}[ ]+)+", re.IGNORECASE)
 _LEGAL_END = re.compile(rf"[ ,]+{_LEGAL}$", re.IGNORECASE)
+_LEGAL_END_AS_WRITTEN = re.compile(rf"[ ,]+{_LEGAL}$")  # "Anna Sa" is a person
 _TRADE_WORD = re.compile(rf"{_TRADE}$")
 # Words of a business name without legal form: "Muster Immobilien", "Muster & Söhne".
 _BUSINESS = re.compile(
@@ -82,7 +83,7 @@ _FOLD = str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue", "Ä": "Ae", "Ö": "Oe
 def _kind(value: str) -> str:
     words = value.split()
     if (
-        _LEGAL_END.search(value)
+        (_LEGAL_END_AS_WRITTEN.search(value) or (value.isupper() and _LEGAL_END.search(value)))
         or _ORG_FIRST.match(value)
         or _ORG_TRADE.match(value)
         or _ORG_TRADE_AFTER.search(value)
@@ -170,7 +171,7 @@ def _forms(kind: str, value: str) -> tuple[list[list[str]], list[str], str]:
             single.append(rest[0])
         return full, single, " ".join(_words(value))
     if value.count(",") == 1:  # "Krasniqi, Arben", as offices export their clients
-        last, first = (part.strip() for part in value.split(","))
+        last, first = (_LEADING_GROUP.sub("", part.strip()) for part in value.split(","))
         value = f"{first} {last}"
     name = _LEADING_GROUP.sub("", value)
     words = _words(name)
