@@ -2,9 +2,9 @@
 
 ## 0.4.0
 
-- Known names: `isomorphism.known.known_detector(names)` always replaces names the caller already knows, such as the clients of an office. Full names in any case and order (`KRASNIQI, Arben`) share one placeholder; single capitalised words of a name are found too, except surnames that are ordinary words (`Keller`, `Koch` …). Companies with and without legal form. Nothing is kept between calls.
-- A recogniser can give hits a `key`: hits with the same kind and key share one placeholder although their text differs. `restore()` then gives back the first form seen.
-- Acceptance: a second table shows tier 2 with known clients (set C names 51 % → 76 %, companies 54 % → 100 %) and that 500 unrelated names cost no precision.
+- Known names: `isomorphism.known.known_detector(names)` always replaces names the caller already knows, such as the clients of an office. Full names in any case and order (`KRASNIQI ARBEN`, `Krasniqi, Arben`, also as an entry), with particles (`da Silva Maria`) and with umlauts as bank statements write them (`RUEEGG`) share one placeholder. Single capitalised words of a name are found too, except surnames that are ordinary words or places (`Keller`, `Koch`, `Zug` …); an entry of one word is only such a word. Companies with and without legal form, in any case. Nothing is kept between calls.
+- A recogniser can give hits a `key`, the spelling they stand for: hits with the same kind and key share one placeholder although their text differs. `restore()` then gives back the first form seen.
+- Acceptance: a second table shows tier 2 with known clients (set C names 51 % → 76 %, companies 54 % → 100 %) and that neither the clients nor 500 unrelated names add a false alarm.
 
 ## 0.3.1
 

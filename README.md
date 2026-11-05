@@ -114,17 +114,17 @@ For comparison, 0.2.0 protected 42 %, 50 % and 27 % (A, B, C) of the tier-1 name
 
 ### Known names
 
-An office knows its clients. Passed with `known_detector` (see `docs/guides/known-names.md`), their names are always replaced. The table simulates the best case: every person and company whose full name (two words or more) is marked in a text is passed as a client, so a surname or first name alone is still measured, not handed over. A second run passes 500 invented names that appear in no text.
+An office knows its clients. Passed with `known_detector` (see `docs/guides/known-names.md`), their names are always replaced. The table simulates the best case: every person and company whose full name (two words or more) is marked in a text is passed as a client, so a surname or first name alone is still measured, not handed over. The false alarms compare the patterns alone, the clients run and a run with 500 invented names that appear in no text: neither adds a false alarm to those of the patterns.
 
 <!-- known:start -->
-| Set | Kind | Tier 2, patterns | Tier 2, clients known | False alarms, 500 strangers |
+| Set | Kind | Tier 2, patterns | Tier 2, clients known | False alarms: patterns / clients known / 500 strangers |
 |---|---|---|---|---|
-| A | PERSON | 38/40 (95%) | 39/40 (98%) | 0 of 62 hits |
-| A | ORG | 4/4 (100%) | 4/4 (100%) | 0 of 28 hits |
-| B | PERSON | 85/87 (98%) | 85/87 (98%) | 2 of 114 hits |
-| B | ORG | 16/16 (100%) | 16/16 (100%) | 0 of 41 hits |
-| C | PERSON | 39/76 (51%) | 58/76 (76%) | 4 of 87 hits |
-| C | ORG | 14/26 (54%) | 26/26 (100%) | 0 of 31 hits |
+| A | PERSON | 38/40 (95%) | 39/40 (98%) | 0 of 62 / 0 of 63 / 0 of 62 |
+| A | ORG | 4/4 (100%) | 4/4 (100%) | 0 of 28 / 0 of 28 / 0 of 28 |
+| B | PERSON | 85/87 (98%) | 85/87 (98%) | 2 of 114 / 2 of 113 / 2 of 114 |
+| B | ORG | 16/16 (100%) | 16/16 (100%) | 0 of 41 / 0 of 41 / 0 of 41 |
+| C | PERSON | 39/76 (51%) | 58/76 (76%) | 4 of 84 / 4 of 95 / 4 of 84 |
+| C | ORG | 14/26 (54%) | 26/26 (100%) | 0 of 31 / 0 of 44 / 0 of 31 |
 <!-- known:end -->
 
 With known clients, set C protects 76 % of the names without a title, still below the 80 % minimum: what remains are people whose full name never appears in the text (children, `Gion`, a surname in a member list) and lower-case chats, where only full names are matched. Companies reach 100 %. The 500 unrelated names add no false alarm.

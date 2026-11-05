@@ -135,7 +135,7 @@ def anonymize(
     for c in _resolve(text, lang, keep, detectors, protect_authorities):
         f = Finding(c.kind, c.start, c.end, c.confidence, c.detector, c.checksum_ok)
         value = text[f.start : f.end]
-        same = (f.kind, value if c.key is None else "\x00" + c.key)
+        same = (f.kind, value if c.key is None else c.key)
         ph = by_value.get(same)
         if ph is None:
             n = counters.get(f.kind, 0)

@@ -12,7 +12,7 @@ Returns `(text_with_placeholders, mapping)`.
 - `detectors`: extra recognisers, for example `known_detector(names)` from `isomorphism.known` (names you already know, see the guide) or `presidio_detector(...)` from `isomorphism.presidio`.
 - `protect_authorities`: names such as "Steueramt St. Gallen" are not replaced (default `True`).
 
-Identical values get the same placeholder inside one call. A placeholder that already stands in the input text, like a literal `[AHV_1]`, is never reused.
+Identical values get the same placeholder inside one call. A detector can also give several spellings one placeholder, as `known_detector` does for the forms of one name; the mapping then holds the first spelling seen. A placeholder that already stands in the input text, like a literal `[AHV_1]`, is never reused.
 
 ## `restore(text, mapping)`
 
@@ -37,7 +37,7 @@ Returns `list[Finding]` without changing the text.
 | `checksum_ok` | `True` or `False` for AHV, IBAN, UID, CARD and PostFinance accounts, `None` for the others |
 | `placeholder` | The placeholder used (empty from `detect`) |
 
-A `Finding` holds no value.
+A `Finding` holds no value, and no key of a detector: which spellings share a placeholder shows only in `placeholder`.
 
 ## `Mapping`
 

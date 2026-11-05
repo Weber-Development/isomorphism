@@ -336,6 +336,44 @@ def test_known_names_kind_and_limits() -> None:
         known_detector(f"Name{i} Test" for i in range(MAX_ENTRIES + 1))
 
 
+def test_known_entries_as_offices_write_them() -> None:
+    from isomorphism.known import known_detector
+
+    clients = known_detector(
+        ["Keller", "Krasniqi, Arben", "Maria da Silva", "Hans von Arx", "MUSTER IMMO AG"]
+    )
+    text = (
+        "Im Keller. Herr Arben Krasniqi; Krasniqi Arben. Maria da Silva, da Silva Maria, "
+        "Hans von Arx, von Arx Hans. Muster Immo AG und MUSTER IMMO AG."
+    )
+    safe, mapping = anonymize(text, detectors=[clients])
+    assert "Im Keller" in safe, "a one-word entry is a single word, not a full name"
+    for name in ("Krasniqi", "Arben", "Silva", "Arx", "Muster"):
+        assert name not in safe.replace("Im Keller", ""), name
+    assert safe.count("[ORG_1]") == 2
+
+
+def test_known_spellings_of_bank_statements() -> None:
+    from isomorphism.known import known_detector
+
+    clients = known_detector(["Ueli Rüegg", ("ORG", "«Blitzblank» Reinigung AG")])
+    text = "RUEEGG UELI zahlt, Ruegg auch, Rüegg. Blitzblank Reinigung AG bezahlt."
+    safe, mapping = anonymize(text, detectors=[clients])
+    assert safe == "[PERSON_1] zahlt, [PERSON_2] auch, [PERSON_2]. [ORG_1] bezahlt."
+    # One placeholder for every spelling: restore() gives back the first one seen.
+    assert restore(safe, mapping) == text.replace("Rüegg.", "Ruegg.")
+
+
+def test_known_form_two_names_share_keeps_them_apart() -> None:
+    from isomorphism.known import known_detector
+
+    clients = known_detector(["Martin Thomas", "Thomas Martin"])
+    text = "Martin Thomas und Thomas Martin"
+    safe, mapping = anonymize(text, detectors=[clients])
+    assert safe == "[PERSON_1] und [PERSON_2]"
+    assert restore(safe, mapping) == text
+
+
 def test_known_table_in_readme_is_current() -> None:
     from pathlib import Path
 

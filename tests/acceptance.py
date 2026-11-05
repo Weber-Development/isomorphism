@@ -82,10 +82,11 @@ Stats = dict[tuple[str, int], Counter[str]]
 
 # Known names: the office passes its clients. "clients" simulates the best case, every person
 # and company whose full name is marked in a text is a client; "strangers" passes 500 invented
-# names that appear in no text, to show that a long client list costs no precision.
+# names that appear in no text, to show what a long client list costs in precision.
 _SYL1 = "Hin Wal Brun Tschan Mor Zur Kel Lin Sut Rüe".split()
 _SYL2 = "egger mattli wiler bühler matter".split()
-_FIRST = "Ottilia Fridolin Arbnora Severin Livia Ramun Dragana Jolanda Ueli Mirela".split()
+# No first name here occurs in the sets A, B or C, so every hit of a stranger is false.
+_FIRST = "Gieri Albulena Arbnora Severin Livia Ramun Dragana Jolanda Ueli Valdrin".split()
 STRANGERS = [f"{f} {a}{b}" for f in _FIRST for a in _SYL1 for b in _SYL2]
 _STRANGERS = known_detector(STRANGERS)
 
@@ -160,7 +161,8 @@ def failures(
 def known_table() -> str:
     """Tier 2 and false alarms with known names, next to the patterns alone."""
     rows = [
-        "| Set | Kind | Tier 2, patterns | Tier 2, clients known | False alarms, 500 strangers |",
+        "| Set | Kind | Tier 2, patterns | Tier 2, clients known "
+        "| False alarms: patterns / clients known / 500 strangers |",
         "|---|---|---|---|---|",
     ]
     for name, cases in SETS.items():
@@ -173,8 +175,7 @@ def known_table() -> str:
                 c = stats[(kind, 2)]
                 n = c["expected"]
                 cells.append(f"{c['protected']}/{n} ({c['protected'] / (n or 1):.0%})")
-            hits = runs[2][1]
-            false = f"{hits[kind + '_false']} of {hits[kind]} hits"
+            false = " / ".join(f"{h[kind + '_false']} of {h[kind]}" for _, h, *_ in runs)
             rows.append(f"| {name} | {kind} | {cells[0]} | {cells[1]} | {false} |")
     return "\n".join(rows)
 

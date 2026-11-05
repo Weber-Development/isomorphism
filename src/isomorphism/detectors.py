@@ -17,8 +17,9 @@ class Candidate:
     confidence: float
     detector: str
     checksum_ok: bool | None = None
-    # Hits with the same kind and key share one placeholder even when their text differs
-    # ("Arben Krasniqi" and "KRASNIQI, Arben"). None: the text itself is the key.
+    # The spelling a hit stands for: hits of one kind with the same key share a placeholder
+    # even when their text differs ("KRASNIQI, Arben" with key "Arben Krasniqi" and the text
+    # "Arben Krasniqi"). None: the text itself is the key.
     key: str | None = None
 
 
