@@ -399,6 +399,34 @@ _ADDRESS_LEAD = re.compile(
     r"\b(?:AG|GmbH|GMBH|SA|Sàrl|Sagl)\s+)$"
 )
 _PLZ_NUM = re.compile(r"(?<![\d.])[1-9]\d{3}(?!\d)")
+# A line that starts with a number of four or more digits and a word, as in a chart of accounts
+# ("1000 Kasse"). A phone number ("0041 44 ...") is not such a line.
+_NUMBERED_LINE = re.compile(r"[ \t]*\d{4,}[ \t]+[^\W\d_]")
+
+
+def _in_numbered_list(text: str, line_start: int) -> bool:
+    """True when the line at `line_start` sits in a chart of accounts or a price list: the line
+    directly before or after it starts with a number and a word, and so does at least one more of
+    the two lines before and the two after. An address block has at most one such neighbour, and
+    a list of names with a place line each never has a numbered line next to the place."""
+    before: list[int] = []
+    i = line_start
+    for _ in range(2):
+        if i == 0:
+            break
+        i = text.rfind("\n", 0, i - 1) + 1
+        before.append(i)
+    after: list[int] = []
+    i = line_start
+    for _ in range(2):
+        i = text.find("\n", i)
+        if i == -1:
+            break
+        i += 1
+        after.append(i)
+    numbered = [bool(_NUMBERED_LINE.match(text, j)) for j in (*before, *after)]
+    adjacent = (before and numbered[0]) or (after and numbered[len(before)])
+    return bool(adjacent) and sum(numbered) >= 2
 
 
 def addresses(text: str) -> Iterator[Candidate]:
@@ -422,6 +450,11 @@ def addresses(text: str) -> Iterator[Candidate]:
         # "KELLER HANS 8405 WINTERTHUR".
         in_caps = bool(capitals[m.start()])
         if not marked and not in_caps and not _ADDRESS_LEAD.search(before):
+            continue
+        i = m.start()
+        while i and text[i - 1] in " \t":
+            i -= 1
+        if not marked and (i == 0 or text[i - 1] == "\n") and _in_numbered_list(text, i):
             continue
         if 1900 <= num <= 2099 and not marked:
             continue
