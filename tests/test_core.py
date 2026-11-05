@@ -267,3 +267,13 @@ def test_streets_after_elided_articles() -> None:
         "Via dell'Indipendenza 2, 6900 Lugano",
     ):
         assert anonymize(text)[0] == "[ADDRESS_1]", text
+
+
+def test_chart_of_accounts_is_not_an_address() -> None:
+    chart = "Accounts:\n1000 Kasse\n1020 Bank\n6570 Informatikaufwand\n8900 Direkte Steuern\n"
+    assert [f for f in detect(chart) if f.kind == "ADDRESS"] == []
+    # One postcode line in an address block stays an address.
+    letter = "Hans Muster\nKirchweg 4\n8000 Zürich\n\nBetreff: Steuern"
+    assert [letter[f.start : f.end] for f in detect(letter) if f.kind == "ADDRESS"] == [
+        "Kirchweg 4\n8000 Zürich"
+    ]

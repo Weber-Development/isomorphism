@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+- A line that starts with four digits and a word is no longer taken for postcode and place when the line before or after starts the same way: a chart of accounts (`1000 Kasse`, `6570 Informatikaufwand`) or a price list stays in the text. A single postcode line in an address block is still an address. The acceptance table is unchanged.
+
 ## 0.3.0
 
 Persons, companies and addresses are measured against an acceptance on three blind, invented Swiss test sets (README "Acceptance"). 0.3.0 finds every name with a title, every company with a legal form and every full address in all three sets, where 0.2.0 found 27 to 50 % of those names. It does not reach the tier-2 minimum on the last blind set for any of the three kinds: names 51 % (0.2.0: 4 %), companies 54 % (0 %), addresses 63 % (47 %).

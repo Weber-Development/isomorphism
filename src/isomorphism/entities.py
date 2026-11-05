@@ -399,6 +399,20 @@ _ADDRESS_LEAD = re.compile(
     r"\b(?:AG|GmbH|GMBH|SA|Sàrl|Sagl)\s+)$"
 )
 _PLZ_NUM = re.compile(r"(?<![\d.])[1-9]\d{3}(?!\d)")
+# A line that starts with four digits and a word, as in a chart of accounts ("1000 Kasse").
+_NUMBERED_LINE = re.compile(r"[ \t]*\d{4}[ \t]+\S")
+
+
+def _in_numbered_list(text: str, start: int) -> bool:
+    """True when the line before or after `start`'s line also starts with four digits and a word:
+    a chart of accounts or a price list, not an address block."""
+    line_start = text.rfind("\n", 0, start) + 1
+    if line_start > 0:
+        prev_start = text.rfind("\n", 0, line_start - 1) + 1
+        if _NUMBERED_LINE.match(text, prev_start, line_start - 1):
+            return True
+    line_end = text.find("\n", start)
+    return line_end != -1 and bool(_NUMBERED_LINE.match(text, line_end + 1))
 
 
 def addresses(text: str) -> Iterator[Candidate]:
@@ -422,6 +436,9 @@ def addresses(text: str) -> Iterator[Candidate]:
         # "KELLER HANS 8405 WINTERTHUR".
         in_caps = bool(capitals[m.start()])
         if not marked and not in_caps and not _ADDRESS_LEAD.search(before):
+            continue
+        at_line_start = text[text.rfind("\n", 0, m.start()) + 1 : m.start()].strip() == ""
+        if not marked and at_line_start and _in_numbered_list(text, m.start()):
             continue
         if 1900 <= num <= 2099 and not marked:
             continue
