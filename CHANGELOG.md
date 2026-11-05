@@ -2,7 +2,7 @@
 
 ## 0.3.1
 
-- A postcode at the start of a line is no longer taken for postcode and place when at least two of the two lines before and the two after start with a number and a word: a chart of accounts (`1000 Kasse`, `6570 Informatikaufwand`) or a price list stays in the text. A postcode line with one such neighbour (`2025 Steuererklärung`, a phone number) is still an address. Known gap: a numbered client list with `PLZ Ort` on its own line between the entries (`1001 Muster Hans\n8000 Zürich\n1002 …`) loses the place. The acceptance table is unchanged.
+- A postcode at the start of a line is no longer taken for postcode and place when the line next to it and at least one more of the two lines before and the two after start with a number and a word: a chart of accounts (`1000 Kasse`, `6570 Informatikaufwand`) or a price list stays in the text. A postcode line with one such neighbour (`2025 Steuererklärung`, a phone number) is still an address. Known gap: a numbered client list with `PLZ Ort` on its own line between the entries (`1001 Muster Hans\n8000 Zürich\n1002 …`), or three or more lines of `PLZ Ort` in a row, loses the place. The acceptance table is unchanged.
 
 ## 0.3.0
 

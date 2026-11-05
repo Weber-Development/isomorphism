@@ -400,29 +400,33 @@ _ADDRESS_LEAD = re.compile(
 )
 _PLZ_NUM = re.compile(r"(?<![\d.])[1-9]\d{3}(?!\d)")
 # A line that starts with a number of four or more digits and a word, as in a chart of accounts
-# ("1000 Kasse"). A phone number ("0041 44 ...") or an amount ("1500 CHF") is not such a line.
+# ("1000 Kasse"). A phone number ("0041 44 ...") is not such a line.
 _NUMBERED_LINE = re.compile(r"[ \t]*\d{4,}[ \t]+[^\W\d_]")
 
 
 def _in_numbered_list(text: str, line_start: int) -> bool:
-    """True when at least two of the two lines before and the two lines after the line at
-    `line_start` start with a number and a word: a chart of accounts or a price list. An address
-    block has at most one such neighbour."""
-    starts = []
+    """True when the line at `line_start` sits in a chart of accounts or a price list: the line
+    directly before or after it starts with a number and a word, and so does at least one more of
+    the two lines before and the two after. An address block has at most one such neighbour, and
+    a list of names with a place line each never has a numbered line next to the place."""
+    before: list[int] = []
     i = line_start
-    for _ in range(2):  # the two lines before
+    for _ in range(2):
         if i == 0:
             break
         i = text.rfind("\n", 0, i - 1) + 1
-        starts.append(i)
+        before.append(i)
+    after: list[int] = []
     i = line_start
-    for _ in range(2):  # the two lines after
+    for _ in range(2):
         i = text.find("\n", i)
         if i == -1:
             break
         i += 1
-        starts.append(i)
-    return sum(1 for j in starts if _NUMBERED_LINE.match(text, j)) >= 2
+        after.append(i)
+    numbered = [bool(_NUMBERED_LINE.match(text, j)) for j in (*before, *after)]
+    adjacent = (before and numbered[0]) or (after and numbered[len(before)])
+    return bool(adjacent) and sum(numbered) >= 2
 
 
 def addresses(text: str) -> Iterator[Candidate]:

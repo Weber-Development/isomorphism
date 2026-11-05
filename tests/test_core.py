@@ -282,5 +282,9 @@ def test_chart_of_accounts_is_not_an_address() -> None:
         "Hans Muster\nPostfach\n8000 Zürich\n0041 44 123 45 67",
         "2025 Steuererklärung\n8000 Zürich",
         "Hans Muster\n8000 Zürich\n1000 Stück Schrauben",
+        "Hans Muster\n8000 Zürich\nPeter Beispiel\n3000 Bern\nAnna Probe\n6900 Lugano",
     ):
-        assert "8000 Zürich" in [text[f.start : f.end] for f in detect(text)], text
+        found = [text[f.start : f.end] for f in detect(text)]
+        assert "8000 Zürich" in found, text
+    names = "Hans Muster\n8000 Zürich\nPeter Beispiel\n3000 Bern\nAnna Probe\n6900 Lugano"
+    assert "3000 Bern" in [names[f.start : f.end] for f in detect(names)]
